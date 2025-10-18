@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Tournament system models
+
+enum DrawType {
+  A
+  B
+  C
+  D
+}
+
+model User {
+  id         String      @id @default(cuid())
+  email      String      @unique
+  createdAt  DateTime    @default(now())
+
+  tournaments Tournament[]
+  sessions    Session[]
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String   @unique
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+}
+
+model OtpToken {
+  id         String   @id @default(cuid())
+  email      String
+  codeHash   String
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int      @default(0)
+
+  @@index([email])
+}
+
+model Tournament {
+  id         String   @id @default(cuid())
+  ownerId    String
+  owner      User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name       String
+  date       DateTime
+  sport      String   @default("badminton")
+  state      String   @default("ongoing") // ongoing | complete
+  locked     Boolean  @default(false)
+  stateJson  Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  entrants   Entrant[]
+
+  @@index([ownerId])
+}
+
+model Entrant {
+  id           String     @id @default(cuid())
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  name         String
+  seed         Int?
+  createdAt    DateTime   @default(now())
+
+  @@index([tournamentId])
+}
+
